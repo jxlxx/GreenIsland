@@ -45,10 +45,10 @@ func JetStream() nats.JetStreamContext {
 func ReadConfig(filename string, conf interface{}) {
 	f, err := os.ReadFile(filename)
 	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
+		log.Fatalln("err reading yaml: ", err)
 	}
 	err = yaml.Unmarshal(f, conf)
 	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
+		log.Fatalln("err unmarshal: ", err)
 	}
 }
