@@ -17,22 +17,47 @@ const (
 )
 
 type Country struct {
-	Name        string
-	CentralBank CentralBank
+	Name            string            `yaml:"name"`
+	Code            string            `yaml:"code"`
+	Currency        bank.CurrencyCode `yaml:"currency_code"`
+	CentralBank     CentralBank       `yaml:"central_bank"`
+	CommercialBanks []CommercialBank  `yaml:"commercial_banks"`
+	Population      Population        `yaml:"population"`
 
-	Unemployment       Rate
-	ConsumerPriceIndex int
+	unemployment       int
+	consumerPriceIndex int
+}
+
+type Population struct {
+	Total   Value `yaml:"total"`
+	Working Value `yaml:"working"`
 }
 
 type CentralBank struct {
-	Name     string
-	Currency bank.Currency
-	M1       int
-	M2       int
-	M3       int
+	Name    string        `yaml:"name"`
+	Reserve CurrencyValue `yaml:"reserve"`
+
+	m1 int
+	m2 int
+	m3 int
 }
 
-type Rate struct {
-	Rate   int
-	Jitter int
+type CommercialBank struct {
+	Name     string        `yaml:"name"`
+	Deposits CurrencyValue `yaml:"deposits"`
+	Reserve  CurrencyValue `yaml:"reserve"`
+}
+
+type Value struct {
+	Total         int `yaml:"total"`
+	Jitter        int `yaml:"jitter"`
+	JitterAverage int `yaml:"jitter_average"`
+}
+
+type CurrencyValue struct {
+	Currency      bank.CurrencyCode `yaml:"currency"`
+	Unit          bank.UnitType     `yaml:"currency_unit"`
+	Total         int               `yaml:"total"`
+	Jitter        int               `yaml:"jitter"`
+	JitterAverage int               `yaml:"jitter_average"`
 }
