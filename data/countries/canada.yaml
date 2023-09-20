@@ -1,0 +1,35 @@
+name: "Canada"
+code: "CAN"
+currency_code: "CAD"
+central_bank:
+    name: "The Bank of Canada"
+    reserve:
+        currency: "CAD"
+        currency_unit: "billions"
+        total: 980
+        jitter: 10
+        jitter_average: 0
+commercial_banks: 
+    -
+        name: "Bank of Montreal"
+        deposits:
+            currency: "CAD"
+            currency_unit: "millions"
+            total: 3300000
+            jitter: 150
+            jitter_average: 150
+        reserve:
+            currency: "CAD"
+            currency_unit: "millions"
+            total: 3300000
+            jitter: 150
+            jitter_average: 150
+population:
+    total:
+        total: 33000000
+        jitter: 300
+        jitter_average: 150
+    working:
+        total: 1600000
+        jitter: 100
+        jitter_average: 50

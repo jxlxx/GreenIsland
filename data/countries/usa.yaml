@@ -1,0 +1,35 @@
+name: "United States of America"
+code: "USA"
+currency_code: "USD"
+central_bank:
+    name: "The Federal Reserve"
+    reserve:
+        currency: "USD"
+        currency_unit: "billions"
+        total: 9800
+        jitter: 100
+        jitter_average: 0
+commercial_banks: 
+    -
+        name: "Bank of America"
+        deposits:
+            currency: "USD"
+            currency_unit: "millions"
+            total: 330000000
+            jitter: 1500
+            jitter_average: 1500
+        reserve:
+            currency: "USD"
+            currency_unit: "millions"
+            total: 330000000
+            jitter: 1500
+            jitter_average: 1500
+population:
+    total:
+        total: 330000000
+        jitter: 3000
+        jitter_average: 1500
+    working:
+        total: 160000000
+        jitter: 1000
+        jitter_average: 500

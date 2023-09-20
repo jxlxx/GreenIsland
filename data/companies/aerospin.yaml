@@ -1,0 +1,80 @@
+full_name: "AeroSpin Wind Technologies"
+name: "AeroSpin"
+hq_country_code: "US"
+stock_symbol: "ASWT"
+currency_code: "USD"
+outstanding_shares: 1090302030
+balance_sheet:
+    unit_type: "millions"
+    assets:
+        liquid_assets: 3000
+        marketable_securities: 7500
+        accounts_receivables: 7500
+        inventory: 3500
+        prepaid_expenses: 1000
+        capital_assets: 20000
+        intangible_assets: 2500
+        investments: 5000
+    liabilities:
+        accounts_payable: 4000
+        wages_payable: 3000
+        interest_payable: 1000
+        deferred_revenue: 4000
+        deferred_taxes: 2500
+        short_term_debts: 2500
+        long_term_debts: 10000
+daily_balance_sheet_jitter:
+    unit_type: "millions"
+    assets:
+        liquid_assets: 50
+        marketable_securities: 6
+        accounts_receivables: 2
+        inventory: 2
+        prepaid_expenses: 1
+        capital_assets: 20
+        intangible_assets: 1
+        investments: 5
+    liabilities:
+        accounts_payable: 10
+        wages_payable: 1
+        interest_payable: 1
+        deferred_revenue: 2
+        deferred_taxes: 1
+        short_term_debts: 10
+        long_term_debts: 1
+income:
+    unit_type: "millions"
+    operating_revenue: 15000
+    non_operating_revenue: 2000
+    production_expenses: 10000
+    administrative_expenses: 2000
+    depreciation: 1000
+daily_income_jitter:
+    unit_type: "millions"
+    operating_revenue: 100
+    non_operating_revenue: 10
+    production_expenses: 100
+    administrative_expenses: 10
+    depreciation: 10
+quarterly_behaviour:
+    unit_type: "micro"
+    dividend_payout: 10
+    share_buyback: 0
+quarterly_metrics:
+    unit_type: "micro"
+    dividend_growth_rate: 5
+    required_rate_of_return_rate: 5 
+    current_stock_price: 2500
+    projected_dividends: 10
+employment:
+    unit_type: "major"
+    employees: 29000
+    employee_satisfaction: 75
+    daily_turnover: 2
+    daily_turnover_jitter: 2
+    highest_annual_salary: 5000000
+    average_annual_salary: 60000
+    lowest_annual_salary: 15000
+industries:
+    primary_industries: ["energy", "manufacturing"]
+    secondary_industries: ["mining", "transportation"]
