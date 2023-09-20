@@ -3,7 +3,9 @@ package subjects
 type Subject string
 
 const (
-	WorldTick Subject = "world.time.tick"
+	TickHour    Subject = "event.time.tick.hour"
+	TickDay     Subject = "event.time.tick.day"
+	TickQuarter Subject = "event.time.tick.quarter"
 )
 
 func (s Subject) String() string {

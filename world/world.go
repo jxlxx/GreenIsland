@@ -37,25 +37,32 @@ func Init() *World {
 }
 
 func (w *World) Run() {
-
 	for {
-		w.nc.Publish(subjects.WorldTick.String(), w.Tick())
+		tick := w.Tick()
+		w.nc.Publish(subjects.TickHour.String(), payloads.Bytes(tick))
+
+		if tick.Day != w.current.Day {
+			w.nc.Publish(subjects.TickDay.String(), payloads.Bytes(tick))
+		}
+
+		if tick.Quarter != w.current.Quarter {
+			w.nc.Publish(subjects.TickQuarter.String(), payloads.Bytes(tick))
+		}
+		w.current = tick
 		time.Sleep(w.HourDuration)
 	}
-
 }
 
-func (w *World) Tick() []byte {
+func (w *World) Tick() payloads.WorldTick {
 	w.totalHours += 1
 
 	hour := w.totalHours % 24
 	day := (w.totalHours / 24) % 90
 	quarter := (w.totalHours / 24) / 90
 
-	tick := payloads.WorldTick{
+	return payloads.WorldTick{
 		Quarter: quarter,
 		Day:     day,
 		Hour:    hour,
 	}
-	return payloads.Bytes(tick)
 }
