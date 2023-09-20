@@ -1,0 +1,21 @@
+name: ""
+code: ""
+currency_code: ""
+central_bank:
+    name: ""
+    reserve:
+        currency: ""
+        currency_unit: ""
+        total: 0
+        jitter: 0
+        jitter_average: 0
+commercial_banks: []
+population:
+    total:
+        total: 0
+        jitter: 0
+        jitter_average: 0
+    working:
+        total: 0
+        jitter: 0
+        jitter_average: 0

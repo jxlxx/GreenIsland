@@ -1,0 +1,79 @@
+full_name: ""
+name: ""
+stock_symbol: ""
+currency_code: ""
+outstanding_shares: 0
+balance_sheet:
+    unit_type: ""
+    assets:
+        liquid_assets: 0
+        marketable_securities: 0
+        accounts_receivables: 0
+        inventory: 0
+        prepaid_expenses: 0
+        capital_assets: 0
+        intangible_assets: 0
+        investments: 0
+    liabilities:
+        accounts_payable: 0
+        wages_payable: 0
+        interest_payable: 0
+        deferred_revenue: 0
+        deferred_taxes: 0
+        short_term_debts: 0
+        long_term_debts: 0
+daily_balance_sheet_jitter:
+    unit_type: ""
+    assets:
+        liquid_assets: 0
+        marketable_securities: 0
+        accounts_receivables: 0
+        inventory: 0
+        prepaid_expenses: 0
+        capital_assets: 0
+        intangible_assets: 0
+        investments: 0
+    liabilities:
+        accounts_payable: 0
+        wages_payable: 0
+        interest_payable: 0
+        deferred_revenue: 0
+        deferred_taxes: 0
+        short_term_debts: 0
+        long_term_debts: 0
+income:
+    unit_type: ""
+    operating_revenue: 0
+    non_operating_revenue: 0
+    production_expenses: 0
+    administrative_expenses: 0
+    depreciation: 0
+daily_income_jitter:
+    unit_type: ""
+    operating_revenue: 0
+    non_operating_revenue: 0
+    production_expenses: 0
+    administrative_expenses: 0
+    depreciation: 0
+quarterly_behaviour:
+    unit_type: ""
+    dividend_payout: 0
+    share_buyback: 0
+quarterly_metrics:
+    unit_type: ""
+    dividend_growth_rate: 0
+    equity_growth_rate: 0
+    current_stock_price: 0
+    projected_dividends: 0
+employment:
+    unit_type: ""
+    employees: 0
+    employee_satisfaction: 0
+    daily_turnover: 0
+    daily_turnover_jitter: 0
+    highest_annual_salary: 0
+    average_annual_salary: 0
+    lowest_annual_salary: 0
+industries:
+    primary_industries: []
+    secondary_industries: []
