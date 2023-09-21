@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/micro"
 
 	"github.com/jxlxx/GreenIsland/config"
 	"github.com/jxlxx/GreenIsland/types"
@@ -20,6 +21,7 @@ type Bank struct {
 	HomeCurrencies []CurrencyCode `yaml:"home_currencies"`
 
 	js          nats.JetStreamContext
+	service     micro.Service
 	accounts    nats.KeyValue
 	currencies  []Currency
 	currencyMap map[CurrencyCode]Currency
@@ -27,6 +29,18 @@ type Bank struct {
 
 func (b Bank) Bucket() string {
 	return fmt.Sprintf("bank-%s-%d", b.CountryCode, b.ID)
+}
+
+func (b Bank) ServiceName() string {
+	return fmt.Sprintf("service-bank-%s-%d", b.CountryCode, b.ID)
+}
+
+func (b Bank) Description() string {
+	return fmt.Sprintf("This is the banking microservice for %s.", b.Name)
+}
+
+func (b Bank) Version() string {
+	return config.GetEnvOrDefault("VERSION", "0.0.1")
 }
 
 type CurrencyCode string
@@ -118,6 +132,15 @@ func (b *Bank) Update() {
 
 }
 
+func (b *Bank) ServiceConfig() micro.Config {
+	conf := micro.Config{
+		Name:        b.ServiceName(),
+		Version:     b.Version(),
+		Description: b.Description(),
+	}
+	return conf
+}
+
 func (b *Bank) Connect() {
 	js := config.JetStream()
 	kv, err := js.KeyValue(b.Bucket())
@@ -126,6 +149,28 @@ func (b *Bank) Connect() {
 	}
 	b.js = js
 	b.accounts = kv
+}
+
+func (b *Bank) AddService(nc *nats.Conn) micro.Service {
+	conf := b.ServiceConfig()
+	srv, err := micro.AddService(nc, conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	b.service = srv
+	b.AddEndpoints()
+	return srv
+}
+
+func (b *Bank) Handle(req micro.Request) {
+	_ = req.Respond([]byte("swag"))
+}
+
+func (b *Bank) AddEndpoints() {
+	if b.service == nil {
+		log.Fatalln("err: service isn't set")
+	}
+	_ = b.service.AddEndpoint("echo", b)
 }
 
 func (b Bank) Init() {

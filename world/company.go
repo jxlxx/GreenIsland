@@ -65,6 +65,7 @@ func (c Company) CreateBalanceSheet() payloads.BalanceSheet {
 		Liabilities: c.CreateLiabilities(),
 	}
 }
+
 func (c Company) CreateAssets() payloads.Assets {
 	a := c.BalanceSheet.Assets
 	return payloads.Assets{

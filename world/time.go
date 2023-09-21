@@ -1,34 +1,33 @@
 package world
 
 import (
-	"log"
 	"time"
 
 	"github.com/jxlxx/GreenIsland/payloads"
 	"github.com/jxlxx/GreenIsland/subjects"
 )
 
-func (w *World) Run() {
+func (w *World) Run() error {
 	for {
 		tick := w.Tick()
 
 		if err := w.nc.Publish(subjects.TickHour.String(), tick); err != nil {
-			log.Println(err)
+			return err
 		}
 
 		if err := w.nc.Publish(subjects.DailyTick(tick.Quarter, tick.Day, tick.Hour), tick); err != nil {
-			log.Println(err)
+			return err
 		}
 
 		if tick.Day != w.current.Day {
 			if err := w.nc.Publish(subjects.TickDay.String(), tick); err != nil {
-				log.Println(err)
+				return err
 			}
 		}
 
 		if tick.Quarter != w.current.Quarter {
 			if err := w.nc.Publish(subjects.TickQuarter.String(), tick); err != nil {
-				log.Println(err)
+				return err
 			}
 		}
 		w.current = tick

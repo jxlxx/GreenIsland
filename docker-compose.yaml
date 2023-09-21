@@ -15,7 +15,7 @@ services:
       - 8222:8222
     volumes:
       - nats-data:/opt/bitnami/nats
-      - $PWD/configs/nats.conf:/etc/nats.conf:ro
+      - $PWD/deployment/confs/nats.conf:/etc/nats.conf:ro
     networks:
       - greenisland-net
 

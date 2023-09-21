@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/micro"
 	"gopkg.in/yaml.v3"
 
 	"github.com/jxlxx/GreenIsland/config"
@@ -39,8 +40,7 @@ func New() *World {
 }
 
 func (w *World) Connect() {
-	nc := config.EncodedConnect()
-	w.nc = nc
+	w.nc = config.EncodedConnect()
 	for _, c := range w.countries {
 		if _, err := w.nc.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
 			fmt.Println(err)
@@ -61,6 +61,16 @@ func (w *World) Connect() {
 			fmt.Println(err)
 		}
 	}
+}
+
+func (w *World) AddServices(nc *nats.Conn) []micro.Service {
+	services := []micro.Service{}
+	for _, c := range w.countries {
+		for _, b := range c.CommercialBanks {
+			services = append(services, b.AddService(nc))
+		}
+	}
+	return services
 }
 
 func (w *World) Initialize() {
