@@ -62,8 +62,8 @@ up-natsbox:
 down-natsbox:
 	docker compose down
 
-.PHONY: serve
-serve:
+.PHONY: run-world
+run-world:
 	NATS_URL=$(NATS_URL) NATS_PASSWORD=$(NATS_PASSWORD) NATS_USER=$(NATS_USER) go run cmd/*.go
 
 .PHONY: natsbox

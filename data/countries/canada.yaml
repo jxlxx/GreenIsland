@@ -6,30 +6,30 @@ central_bank:
     reserve:
         currency: "CAD"
         currency_unit: "billions"
-        total: 980
+        value: 980
         jitter: 10
-        jitter_average: 0
+        average_delta: 0
 commercial_banks: 
     -
         name: "Bank of Montreal"
         deposits:
             currency: "CAD"
             currency_unit: "millions"
-            total: 3300000
+            value: 3300000
             jitter: 150
-            jitter_average: 150
+            average_delta: 150
         reserve:
             currency: "CAD"
             currency_unit: "millions"
-            total: 3300000
+            value: 3300000
             jitter: 150
-            jitter_average: 150
+            average_delta: 150
 population:
     total:
-        total: 33000000
+        value: 33000000
         jitter: 300
-        jitter_average: 150
+        average_delta: 150
     working:
-        total: 1600000
+        value: 1600000
         jitter: 100
-        jitter_average: 50
+        average_delta: 50

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -33,6 +34,15 @@ func Connect() *nats.Conn {
 	return nc
 }
 
+func EncodedConnect() *nats.EncodedConn {
+	nc := Connect()
+	conn, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return conn
+}
+
 func JetStream() nats.JetStreamContext {
 	nc := Connect()
 	js, err := nc.JetStream()
@@ -43,7 +53,12 @@ func JetStream() nats.JetStreamContext {
 }
 
 func ReadConfig(filename string, conf interface{}) {
-	f, err := os.ReadFile(filename)
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalln("err getting working dir: ", err)
+	}
+	fullPath := fmt.Sprintf("%s%s", wd, filename)
+	f, err := os.ReadFile(fullPath)
 	if err != nil {
 		log.Fatalln("err reading yaml: ", err)
 	}

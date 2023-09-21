@@ -6,30 +6,30 @@ central_bank:
     reserve:
         currency: "USD"
         currency_unit: "billions"
-        total: 9800
+        value: 9800
         jitter: 100
-        jitter_average: 0
+        average_delta: 0
 commercial_banks: 
     -
         name: "Bank of America"
         deposits:
             currency: "USD"
             currency_unit: "millions"
-            total: 330000000
+            value: 330000000
             jitter: 1500
-            jitter_average: 1500
+            average_delta: 1500
         reserve:
             currency: "USD"
             currency_unit: "millions"
-            total: 330000000
+            value: 330000000
             jitter: 1500
-            jitter_average: 1500
+            average_delta: 1500
 population:
     total:
-        total: 330000000
+        value: 330000000
         jitter: 3000
-        jitter_average: 1500
+        average_delta: 1500
     working:
-        total: 160000000
+        value: 160000000
         jitter: 1000
-        jitter_average: 500
+        average_delta: 500
