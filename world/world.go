@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -14,12 +15,13 @@ import (
 )
 
 type World struct {
-	HourDuration time.Duration
-	nc           *nats.Conn
-	current      payloads.WorldTick
-	totalHours   int
-	countries    []*Country
-	companies    []*Company
+	HourDuration     time.Duration
+	elaspsedRealTime time.Duration
+	nc               *nats.Conn
+	current          payloads.WorldTick
+	totalHours       int
+	countries        []*Country
+	companies        []*Company
 }
 
 func New() *World {
@@ -27,61 +29,63 @@ func New() *World {
 }
 
 func Init() *World {
+	nc := config.Connect()
+	conn, _ := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	countries := createCountries()
 	companies := createCompanies()
+
+	for _, c := range countries {
+		if _, err := conn.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+		if _, err := conn.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	for _, c := range companies {
+		if _, err := conn.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+		if _, err := conn.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	now := time.Now()
 	world := &World{
-		HourDuration: time.Millisecond,
-		nc:           config.Connect(),
-		countries:    countries,
-		companies:    companies,
+		HourDuration:     time.Microsecond * 500,
+		nc:               nc,
+		countries:        countries,
+		companies:        companies,
+		elaspsedRealTime: now.Sub(now),
 	}
 	return world
 }
 
-func (w *World) Run() {
-	for {
-		tick := w.Tick()
-		w.nc.Publish(subjects.TickHour.String(), payloads.Bytes(tick))
-
-		if tick.Day != w.current.Day {
-			w.nc.Publish(subjects.TickDay.String(), payloads.Bytes(tick))
-		}
-
-		if tick.Quarter != w.current.Quarter {
-			w.nc.Publish(subjects.TickQuarter.String(), payloads.Bytes(tick))
-		}
-		w.current = tick
-		time.Sleep(w.HourDuration)
-	}
-}
-
-func (w *World) Tick() payloads.WorldTick {
-	w.totalHours += 1
-
-	hour := w.totalHours % 24
-	day := (w.totalHours / 24) % 90
-	quarter := ((w.totalHours/24)/90)%4 + 1
-
-	return payloads.WorldTick{
-		Quarter: quarter,
-		Day:     day,
-		Hour:    hour,
-	}
-}
-
 func createCountries() []*Country {
 	files := []string{
-		"data/countries/canada.yaml",
-		"data/countries/usa.yaml",
+		"/data/countries/canada.yaml",
+		"/data/countries/usa.yaml",
 	}
-	return create(files, Country{})
+	countries := create(files, Country{})
+	for _, c := range countries {
+		nc := config.EncodedConnect()
+		c.nc = nc
+	}
+	return countries
 }
 
 func createCompanies() []*Company {
 	files := []string{
-		"data/company/aerospin.yaml",
+		"/data/companies/aerospin.yaml",
 	}
-	return create(files, Company{})
+	companies := create(files, Company{})
+	for _, c := range companies {
+		nc := config.EncodedConnect()
+		c.nc = nc
+	}
+	return companies
 }
 func create[T any](files []string, t T) []*T {
 	slice := []*T{}
@@ -93,13 +97,13 @@ func create[T any](files []string, t T) []*T {
 	return slice
 }
 
-func CreateTemplate() {
-	country := Country{}
-	data, err := yaml.Marshal(&country)
+func CreateTemplate[T any](t T, filename string) {
+	var c T
+	data, err := yaml.Marshal(&c)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	if err = os.WriteFile("templates/country.yaml", data, 0644); err != nil {
+	if err = os.WriteFile(filename, data, 0644); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -1,7 +1,12 @@
 package world
 
 import (
+	"fmt"
+
 	"github.com/jxlxx/GreenIsland/bank"
+	"github.com/jxlxx/GreenIsland/payloads"
+	"github.com/jxlxx/GreenIsland/subjects"
+	"github.com/nats-io/nats.go"
 )
 
 type Industry string
@@ -28,6 +33,7 @@ type Country struct {
 
 	unemployment       int
 	consumerPriceIndex int
+	nc                 *nats.EncodedConn
 }
 
 type Population struct {
@@ -48,4 +54,42 @@ type CommercialBank struct {
 	Name     string        `yaml:"name"`
 	Deposits CurrencyValue `yaml:"deposits"`
 	Reserve  CurrencyValue `yaml:"reserve"`
+}
+
+func (b CommercialBank) Update() CommercialBank {
+	b.Deposits.Value += b.Deposits.CalcUpdate()
+	b.Reserve.Value += b.Reserve.CalcUpdate()
+	return b
+}
+
+func (c *Country) DailySubscriber() func(payloads.WorldTick) {
+	return func(payloads.WorldTick) {
+		c.DailyUpdate()
+	}
+}
+
+func (c *Country) QuarterlySubscriber() func(payloads.WorldTick) {
+	return func(p payloads.WorldTick) {
+
+		update := payloads.QuarterlyCountryUpdate{
+			Name:              c.Name,
+			Quarter:           p.Quarter,
+			TotalPopulation:   c.Population.Total.Value,
+			WorkingPopulation: c.Population.Total.Value,
+		}
+
+		if err := c.nc.Publish(subjects.QuarterlyCountryUpdate(c.Code, p.Quarter), update); err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (c *Country) DailyUpdate() {
+	c.Population.Total.Value += c.Population.Total.CalcUpdate()
+	c.Population.Working.Value += c.Population.Working.CalcUpdate()
+	c.CentralBank.Reserve.Value += c.CentralBank.Reserve.CalcUpdate()
+
+	for i, b := range c.CommercialBanks {
+		c.CommercialBanks[i] = b.Update()
+	}
 }
