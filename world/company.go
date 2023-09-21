@@ -8,6 +8,7 @@ import (
 	"github.com/jxlxx/GreenIsland/bank"
 	"github.com/jxlxx/GreenIsland/payloads"
 	"github.com/jxlxx/GreenIsland/subjects"
+	"github.com/jxlxx/GreenIsland/types"
 )
 
 type Company struct {
@@ -21,8 +22,8 @@ type Company struct {
 	BalanceSheet      BalanceSheet `yaml:"balance_sheet"`
 	Income            Income       `yaml:"income"`
 
-	Bid CurrencyValue `yaml:"bid"`
-	Ask CurrencyValue `yaml:"ask"`
+	Bid bank.CurrencyValue `yaml:"bid"`
+	Ask bank.CurrencyValue `yaml:"ask"`
 
 	QuarterlyBehaviour QuarterlyBehaviour `yaml:"quarterly_behaviour"`
 	QuarterlyMetrics   QuarterlyMetrics   `yaml:"quarterly_metrics"`
@@ -119,7 +120,7 @@ func (c *Company) DailyUpdate() {
 	c.Bid, c.Ask = c.UpdateBidAsk()
 }
 
-func (c Company) UpdateBidAsk() (CurrencyValue, CurrencyValue) {
+func (c Company) UpdateBidAsk() (bank.CurrencyValue, bank.CurrencyValue) {
 	return c.Bid, c.Ask
 }
 
@@ -135,12 +136,12 @@ func (b BalanceSheet) Update() BalanceSheet {
 }
 
 type Employment struct {
-	Employees            Value         `yaml:"employees"`
-	EmployeeSatisfaction Value         `yaml:"employee_satisfaction"`
-	DailyTurnover        Value         `yaml:"daily_turnover"`
-	HighestAnnualSalary  CurrencyValue `yaml:"highest_annual_salary"`
-	AverageAnnualSalary  CurrencyValue `yaml:"average_annual_salary"`
-	LowestAnnualSalary   CurrencyValue `yaml:"lowest_annual_salary"`
+	Employees            types.Value        `yaml:"employees"`
+	EmployeeSatisfaction types.Value        `yaml:"employee_satisfaction"`
+	DailyTurnover        types.Value        `yaml:"daily_turnover"`
+	HighestAnnualSalary  bank.CurrencyValue `yaml:"highest_annual_salary"`
+	AverageAnnualSalary  bank.CurrencyValue `yaml:"average_annual_salary"`
+	LowestAnnualSalary   bank.CurrencyValue `yaml:"lowest_annual_salary"`
 }
 
 func (e Employment) Update() Employment {
@@ -154,14 +155,14 @@ func (e Employment) Update() Employment {
 }
 
 type Assets struct {
-	LiquidAssets         CurrencyValue `yaml:"liquid_assets"`
-	MarketableSecurities CurrencyValue `yaml:"marketable_securities"`
-	AccountsReceivables  CurrencyValue `yaml:"accounts_receivables"`
-	Inventory            CurrencyValue `yaml:"inventory"`
-	PrepaidExpenses      CurrencyValue `yaml:"prepaid_expenses"`
-	CapitalAssets        CurrencyValue `yaml:"capital_assets"`
-	IntangibleAssets     CurrencyValue `yaml:"intangible_assets"`
-	Investments          CurrencyValue `yaml:"investments"`
+	LiquidAssets         bank.CurrencyValue `yaml:"liquid_assets"`
+	MarketableSecurities bank.CurrencyValue `yaml:"marketable_securities"`
+	AccountsReceivables  bank.CurrencyValue `yaml:"accounts_receivables"`
+	Inventory            bank.CurrencyValue `yaml:"inventory"`
+	PrepaidExpenses      bank.CurrencyValue `yaml:"prepaid_expenses"`
+	CapitalAssets        bank.CurrencyValue `yaml:"capital_assets"`
+	IntangibleAssets     bank.CurrencyValue `yaml:"intangible_assets"`
+	Investments          bank.CurrencyValue `yaml:"investments"`
 }
 
 func (a Assets) Update() Assets {
@@ -177,13 +178,13 @@ func (a Assets) Update() Assets {
 }
 
 type Liabilities struct {
-	AccountsPayable CurrencyValue `yaml:"accounts_payable"`
-	WagesPayable    CurrencyValue `yaml:"wages_payable"`
-	InterestPayable CurrencyValue `yaml:"interest_payable"`
-	DeferredRevenue CurrencyValue `yaml:"deferred_revenue"`
-	DeferredTaxes   CurrencyValue `yaml:"deferred_taxes"`
-	ShortTermDebts  CurrencyValue `yaml:"short_term_debts"`
-	LongTermDebts   CurrencyValue `yaml:"long_term_debts"`
+	AccountsPayable bank.CurrencyValue `yaml:"accounts_payable"`
+	WagesPayable    bank.CurrencyValue `yaml:"wages_payable"`
+	InterestPayable bank.CurrencyValue `yaml:"interest_payable"`
+	DeferredRevenue bank.CurrencyValue `yaml:"deferred_revenue"`
+	DeferredTaxes   bank.CurrencyValue `yaml:"deferred_taxes"`
+	ShortTermDebts  bank.CurrencyValue `yaml:"short_term_debts"`
+	LongTermDebts   bank.CurrencyValue `yaml:"long_term_debts"`
 }
 
 func (l Liabilities) Update() Liabilities {
@@ -198,11 +199,11 @@ func (l Liabilities) Update() Liabilities {
 }
 
 type Income struct {
-	OperatingRevenue       CurrencyValue `yaml:"operating_revenue"`
-	NonOperatingRevenue    CurrencyValue `yaml:"non_operating_revenue"`
-	ProductionExpenses     CurrencyValue `yaml:"production_expenses"`
-	AdministrativeExpenses CurrencyValue `yaml:"administrative_expenses"`
-	Depreciation           CurrencyValue `yaml:"depreciation"`
+	OperatingRevenue       bank.CurrencyValue `yaml:"operating_revenue"`
+	NonOperatingRevenue    bank.CurrencyValue `yaml:"non_operating_revenue"`
+	ProductionExpenses     bank.CurrencyValue `yaml:"production_expenses"`
+	AdministrativeExpenses bank.CurrencyValue `yaml:"administrative_expenses"`
+	Depreciation           bank.CurrencyValue `yaml:"depreciation"`
 }
 
 func (i Income) Update() Income {
@@ -215,8 +216,8 @@ func (i Income) Update() Income {
 }
 
 type QuarterlyBehaviour struct {
-	DividendPayout CurrencyValue `yaml:"dividend_payout"`
-	ShareBuyback   Value         `yaml:"share_buyback"`
+	DividendPayout bank.CurrencyValue `yaml:"dividend_payout"`
+	ShareBuyback   types.Value        `yaml:"share_buyback"`
 }
 
 func (q QuarterlyBehaviour) Update() QuarterlyBehaviour {
@@ -229,10 +230,10 @@ func (q QuarterlyBehaviour) Update() QuarterlyBehaviour {
 }
 
 type QuarterlyMetrics struct {
-	DividendGrowthRate   CurrencyValue `yaml:"dividend_growth_rate"`
-	RequiredRateOfReturn Value         `yaml:"required_rate_of_return"`
-	CurrentStockPrice    CurrencyValue `yaml:"current_stock_price"`
-	ProjectedDividends   CurrencyValue `yaml:"projected_dividends"`
+	DividendGrowthRate   bank.CurrencyValue `yaml:"dividend_growth_rate"`
+	RequiredRateOfReturn types.Value        `yaml:"required_rate_of_return"`
+	CurrentStockPrice    bank.CurrencyValue `yaml:"current_stock_price"`
+	ProjectedDividends   bank.CurrencyValue `yaml:"projected_dividends"`
 }
 
 func (q QuarterlyMetrics) Update() QuarterlyMetrics {

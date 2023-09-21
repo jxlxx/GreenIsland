@@ -17,7 +17,7 @@ import (
 type World struct {
 	HourDuration     time.Duration
 	elaspsedRealTime time.Duration
-	nc               *nats.Conn
+	nc               *nats.EncodedConn
 	current          payloads.WorldTick
 	totalHours       int
 	countries        []*Country
@@ -25,42 +25,48 @@ type World struct {
 }
 
 func New() *World {
-	return Init()
-}
-
-func Init() *World {
-	nc := config.Connect()
-	conn, _ := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	countries := createCountries()
 	companies := createCompanies()
-
-	for _, c := range countries {
-		if _, err := conn.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
-			fmt.Println(err)
-		}
-		if _, err := conn.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	for _, c := range companies {
-		if _, err := conn.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
-			fmt.Println(err)
-		}
-		if _, err := conn.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
-			fmt.Println(err)
-		}
-	}
 
 	now := time.Now()
 	world := &World{
 		HourDuration:     time.Microsecond * 500,
-		nc:               nc,
 		countries:        countries,
 		companies:        companies,
 		elaspsedRealTime: now.Sub(now),
 	}
 	return world
+}
+
+func (w *World) Connect() {
+	nc := config.EncodedConnect()
+	w.nc = nc
+	for _, c := range w.countries {
+		if _, err := w.nc.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+		if _, err := w.nc.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+		for _, b := range c.CommercialBanks {
+			b.Connect()
+		}
+	}
+
+	for _, c := range w.companies {
+		if _, err := w.nc.Subscribe(subjects.TickDay.String(), c.DailySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+		if _, err := w.nc.Subscribe(subjects.TickQuarter.String(), c.QuarterlySubscriber()); err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+func (w *World) Initialize() {
+	for _, c := range w.countries {
+		c.Initialize()
+	}
 }
 
 func createCountries() []*Country {
@@ -87,6 +93,7 @@ func createCompanies() []*Company {
 	}
 	return companies
 }
+
 func create[T any](files []string, t T) []*T {
 	slice := []*T{}
 	for _, f := range files {

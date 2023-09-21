@@ -3,10 +3,12 @@ package world
 import (
 	"fmt"
 
+	"github.com/nats-io/nats.go"
+
 	"github.com/jxlxx/GreenIsland/bank"
 	"github.com/jxlxx/GreenIsland/payloads"
 	"github.com/jxlxx/GreenIsland/subjects"
-	"github.com/nats-io/nats.go"
+	"github.com/jxlxx/GreenIsland/types"
 )
 
 type Industry string
@@ -28,38 +30,32 @@ type Country struct {
 	Code            string            `yaml:"code"`
 	Currency        bank.CurrencyCode `yaml:"currency_code"`
 	CentralBank     CentralBank       `yaml:"central_bank"`
-	CommercialBanks []CommercialBank  `yaml:"commercial_banks"`
+	CommercialBanks []*bank.Bank      `yaml:"commercial_banks"`
 	Population      Population        `yaml:"population"`
 
-	unemployment       int
-	consumerPriceIndex int
-	nc                 *nats.EncodedConn
+	nc *nats.EncodedConn
 }
 
 type Population struct {
-	Total   Value `yaml:"total"`
-	Working Value `yaml:"working"`
+	Total   types.Value `yaml:"total"`
+	Working types.Value `yaml:"working"`
 }
 
 type CentralBank struct {
-	Name    string        `yaml:"name"`
-	Reserve CurrencyValue `yaml:"reserve"`
-
-	m1 int
-	m2 int
-	m3 int
+	Name    string             `yaml:"name"`
+	Reserve bank.CurrencyValue `yaml:"reserve"`
 }
 
-type CommercialBank struct {
-	Name     string        `yaml:"name"`
-	Deposits CurrencyValue `yaml:"deposits"`
-	Reserve  CurrencyValue `yaml:"reserve"`
+func (c *Country) CreateBanks() {
+	for _, b := range c.CommercialBanks {
+		b.Setup()
+	}
 }
 
-func (b CommercialBank) Update() CommercialBank {
-	b.Deposits.Value += b.Deposits.CalcUpdate()
-	b.Reserve.Value += b.Reserve.CalcUpdate()
-	return b
+func (c *Country) Initialize() {
+	for _, b := range c.CommercialBanks {
+		b.Init()
+	}
 }
 
 func (c Country) CalculateMoneySupply() payloads.MoneySupply {
@@ -77,9 +73,7 @@ func (c Country) CalculateMoneySupply() payloads.MoneySupply {
 
 func (c Country) CalculateM1() int {
 	sum := 0
-	for _, b := range c.CommercialBanks {
-		sum += b.Deposits.Value
-	}
+	// get info from bank
 	return sum
 }
 func (c Country) CalculateM2() int {
@@ -121,7 +115,4 @@ func (c *Country) DailyUpdate() {
 	c.Population.Working.Value += c.Population.Working.CalcUpdate()
 	c.CentralBank.Reserve.Value += c.CentralBank.Reserve.CalcUpdate()
 
-	for i, b := range c.CommercialBanks {
-		c.CommercialBanks[i] = b.Update()
-	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
@@ -13,21 +14,49 @@ import (
 )
 
 type Bank struct {
+	ID             int            `yaml:"id"`
+	Name           string         `yaml:"name"`
+	CountryCode    string         `yaml:"country_code"`
+	HomeCurrencies []CurrencyCode `yaml:"home_currencies"`
+
 	js          nats.JetStreamContext
 	accounts    nats.KeyValue
 	currencies  []Currency
 	currencyMap map[CurrencyCode]Currency
 }
 
+func (b Bank) Bucket() string {
+	return fmt.Sprintf("bank-%s-%d", b.CountryCode, b.ID)
+}
+
 type CurrencyCode string
 
 type Currency struct {
-	Name           string       `yaml:"name"`
-	Code           CurrencyCode `yaml:"code"`
-	MicroUnit      CurrencyUnit `yaml:"micro_unit"`
-	MinorUnit      CurrencyUnit `yaml:"minor_unit"`
-	MajorUnit      CurrencyUnit `yaml:"major_unit"`
-	HighVolumeUnit CurrencyUnit `yaml:"high_volume_unit"`
+	Name              string       `yaml:"name"`
+	Code              CurrencyCode `yaml:"code"`
+	MicroUnit         CurrencyUnit `yaml:"micro_unit"`
+	MinorUnit         CurrencyUnit `yaml:"minor_unit"`
+	MajorUnit         CurrencyUnit `yaml:"major_unit"`
+	HighVolumeUnit    CurrencyUnit `yaml:"high_volume_unit"`
+	MegaVolumeUnit    CurrencyUnit `yaml:"mega_volume_unit"`
+	HighestVolumeUnit CurrencyUnit `yaml:"highest_volume_unit"`
+}
+
+type CurrencyValue struct {
+	Currency CurrencyCode `yaml:"currency"`
+	Unit     UnitType     `yaml:"currency_unit"`
+	Value    int          `yaml:"value"`
+	Jitter   int          `yaml:"jitter"`
+	Average  int          `yaml:"average_delta"`
+}
+
+func (v CurrencyValue) CalcUpdate() int {
+	if v.Jitter == 0 {
+		return 0
+	}
+	delta := rand.Intn(v.Jitter) - v.Jitter/2
+	shift := v.Average
+	return delta + shift
 }
 
 type UnitType string
@@ -64,22 +93,37 @@ type Funds struct {
 	Currency       Currency
 }
 
-func New() *Bank {
-	js := config.JetStream()
-	kv, err := js.KeyValue("bank")
-	if err != nil {
-		log.Fatalln(err)
-	}
+func (b *Bank) Setup() {
 	currencies, _ := InitCurrencies()
 	cm := make(map[CurrencyCode]Currency)
 	for _, c := range currencies {
 		cm[c.Code] = c
 	}
-	return &Bank{
-		js:          js,
-		accounts:    kv,
-		currencies:  currencies,
-		currencyMap: cm,
+	b.currencies = currencies
+	b.currencyMap = cm
+}
+
+func (b *Bank) Update() {
+
+}
+
+func (b *Bank) Connect() {
+	js := config.JetStream()
+	kv, err := js.KeyValue(b.Bucket())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	b.js = js
+	b.accounts = kv
+}
+
+func (b Bank) Init() {
+	js := config.JetStream()
+	_, err := js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket: b.Bucket(),
+	})
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
 
@@ -194,153 +238,4 @@ func (b Bank) GetUserFunds(u types.User) (Account, error) {
 		Funds:  fundMap,
 	}
 	return account, nil
-}
-
-func Initialize() {
-	js := config.JetStream()
-	_, err := js.CreateKeyValue(&nats.KeyValueConfig{
-		Bucket: "bank",
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
-func InitCurrencies() ([]Currency, error) {
-	return []Currency{
-		{
-			Name: "canadian dollars",
-			Code: "CAD",
-			MajorUnit: CurrencyUnit{
-				NameSingular: "dollar",
-				NamePlural:   "dollars",
-				Symbol:       "$",
-				MinorRatio:   100,
-			},
-			MicroUnit: CurrencyUnit{
-				NameSingular: "hundredth of a cent",
-				NamePlural:   "hundredths of a cent",
-				Symbol:       "µ",
-				MinorRatio:   100,
-			},
-			HighVolumeUnit: CurrencyUnit{
-				NameSingular: "Million",
-				NamePlural:   "Millions",
-				Symbol:       "M",
-				MinorRatio:   100000000,
-			},
-			MinorUnit: CurrencyUnit{
-				NameSingular: "penny",
-				NamePlural:   "pennies",
-				Symbol:       "¢",
-				MinorRatio:   1,
-			},
-		},
-		{
-			Name: "american dollars",
-			Code: "USD",
-			MicroUnit: CurrencyUnit{
-				NameSingular: "hundredth of a cent",
-				NamePlural:   "hundredths of a cent",
-				Symbol:       "µ",
-				MinorRatio:   100,
-			},
-			MajorUnit: CurrencyUnit{
-				NameSingular: "dollar",
-				NamePlural:   "dollars",
-				Symbol:       "$",
-			},
-			HighVolumeUnit: CurrencyUnit{
-				NameSingular: "Million",
-				NamePlural:   "Millions",
-				Symbol:       "M",
-				MinorRatio:   100000000,
-			},
-			MinorUnit: CurrencyUnit{
-				NameSingular: "penny",
-				NamePlural:   "pennies",
-				Symbol:       "¢",
-			},
-		},
-		{
-			Name: "british pound sterling",
-			Code: "GBP",
-			MicroUnit: CurrencyUnit{
-				NameSingular: "hundredth of a penny",
-				NamePlural:   "hundredths of a penny",
-				Symbol:       "µ",
-				MinorRatio:   100,
-			},
-			MajorUnit: CurrencyUnit{
-				NameSingular: "pound",
-				NamePlural:   "pounds",
-				Symbol:       "£",
-			},
-			HighVolumeUnit: CurrencyUnit{
-				NameSingular: "Million",
-				NamePlural:   "Millions",
-				Symbol:       "M",
-				MinorRatio:   100000000,
-			},
-			MinorUnit: CurrencyUnit{
-				NameSingular: "penny",
-				NamePlural:   "pence",
-				Symbol:       "p",
-			},
-		},
-		{
-			Name: "euro",
-			Code: "EUR",
-			MicroUnit: CurrencyUnit{
-				NameSingular: "hundredth of a euro",
-				NamePlural:   "hundredths of a euro",
-				Symbol:       "µ",
-				MinorRatio:   100,
-			},
-			MajorUnit: CurrencyUnit{
-				NameSingular: "euro",
-				NamePlural:   "euros",
-				Symbol:       "€",
-			},
-			HighVolumeUnit: CurrencyUnit{
-				NameSingular: "Million",
-				NamePlural:   "Millions",
-				Symbol:       "M",
-				MinorRatio:   100000000,
-			},
-			MinorUnit: CurrencyUnit{
-				NameSingular: "euro cent",
-				NamePlural:   "euro cents",
-				Symbol:       "c",
-			},
-		},
-		{
-			Name: "japanese yen",
-			Code: "JPY",
-			MicroUnit: CurrencyUnit{
-				NameSingular: "tenth of a yen",
-				NamePlural:   "tenth of a yen",
-				Symbol:       "µ",
-				MinorRatio:   10,
-			},
-			MajorUnit: CurrencyUnit{
-				NameSingular: "yen",
-				NamePlural:   "yen",
-				Symbol:       "¥",
-				MinorRatio:   1,
-			},
-			HighVolumeUnit: CurrencyUnit{
-				NameSingular: "yen",
-				NamePlural:   "yen",
-				Symbol:       "¥",
-				MinorRatio:   1,
-			},
-			MinorUnit: CurrencyUnit{
-				NameSingular: "yen",
-				NamePlural:   "yen",
-				Symbol:       "¥",
-				MinorRatio:   1,
-			},
-		},
-	}, nil
 }

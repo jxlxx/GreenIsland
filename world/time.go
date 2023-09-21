@@ -9,31 +9,38 @@ import (
 )
 
 func (w *World) Run() {
+
+	w.connect()
+
 	for {
 		tick := w.Tick()
 
-		if err := w.nc.Publish(subjects.TickHour.String(), payloads.Bytes(tick)); err != nil {
+		if err := w.nc.Publish(subjects.TickHour.String(), tick); err != nil {
 			log.Println(err)
 		}
 
-		if err := w.nc.Publish(subjects.DailyTick(tick.Quarter, tick.Day, tick.Hour), payloads.Bytes(tick)); err != nil {
+		if err := w.nc.Publish(subjects.DailyTick(tick.Quarter, tick.Day, tick.Hour), tick); err != nil {
 			log.Println(err)
 		}
 
 		if tick.Day != w.current.Day {
-			if err := w.nc.Publish(subjects.TickDay.String(), payloads.Bytes(tick)); err != nil {
+			if err := w.nc.Publish(subjects.TickDay.String(), tick); err != nil {
 				log.Println(err)
 			}
 		}
 
 		if tick.Quarter != w.current.Quarter {
-			if err := w.nc.Publish(subjects.TickQuarter.String(), payloads.Bytes(tick)); err != nil {
+			if err := w.nc.Publish(subjects.TickQuarter.String(), tick); err != nil {
 				log.Println(err)
 			}
 		}
 		w.current = tick
 		time.Sleep(w.HourDuration)
 	}
+}
+
+func (w *World) connect() {
+
 }
 
 func (w *World) Tick() payloads.WorldTick {

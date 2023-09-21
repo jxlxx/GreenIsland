@@ -12,18 +12,10 @@ central_bank:
 commercial_banks: 
     -
         name: "Bank of America"
-        deposits:
-            currency: "USD"
-            currency_unit: "millions"
-            value: 330000000
-            jitter: 1500
-            average_delta: 1500
-        reserve:
-            currency: "USD"
-            currency_unit: "millions"
-            value: 330000000
-            jitter: 1500
-            average_delta: 1500
+        id: 247
+        country_code: "USA"
+        home_currencies: 
+            - "USD"
 population:
     total:
         value: 330000000
