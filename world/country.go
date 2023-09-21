@@ -62,6 +62,37 @@ func (b CommercialBank) Update() CommercialBank {
 	return b
 }
 
+func (c Country) CalculateMoneySupply() payloads.MoneySupply {
+	m1 := c.CalculateM1()
+	m2 := c.CalculateM2()
+	m3 := c.CalculateM3()
+	return payloads.MoneySupply{
+		Currency:     c.CentralBank.Reserve.Currency,
+		CurrencyUnit: c.CentralBank.Reserve.Unit,
+		M1:           m1,
+		M2:           m1 + m2,
+		M3:           m1 + m2 + m3,
+	}
+}
+
+func (c Country) CalculateM1() int {
+	sum := 0
+	for _, b := range c.CommercialBanks {
+		sum += b.Deposits.Value
+	}
+	return sum
+}
+func (c Country) CalculateM2() int {
+	sum := 0
+	// get info from bank (traders)
+	return sum
+}
+func (c Country) CalculateM3() int {
+	sum := 0
+	// get info from bank (companies)
+	return sum
+}
+
 func (c *Country) DailySubscriber() func(payloads.WorldTick) {
 	return func(payloads.WorldTick) {
 		c.DailyUpdate()
@@ -76,6 +107,7 @@ func (c *Country) QuarterlySubscriber() func(payloads.WorldTick) {
 			Quarter:           p.Quarter,
 			TotalPopulation:   c.Population.Total.Value,
 			WorkingPopulation: c.Population.Total.Value,
+			MoneySupply:       c.CalculateMoneySupply(),
 		}
 
 		if err := c.nc.Publish(subjects.QuarterlyCountryUpdate(c.Code, p.Quarter), update); err != nil {
