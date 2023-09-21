@@ -40,6 +40,7 @@ type Currency struct {
 	HighVolumeUnit    CurrencyUnit `yaml:"high_volume_unit"`
 	MegaVolumeUnit    CurrencyUnit `yaml:"mega_volume_unit"`
 	HighestVolumeUnit CurrencyUnit `yaml:"highest_volume_unit"`
+	UnitMap           map[UnitType]CurrencyUnit
 }
 
 type CurrencyValue struct {
@@ -90,13 +91,23 @@ type Funds struct {
 	TotalMajor     int
 	AvailableMajor int
 	OnHoldMajor    int
-	Currency       Currency
+	Currency       CurrencyCode
 }
 
 func (b *Bank) Setup() {
 	currencies, _ := InitCurrencies()
 	cm := make(map[CurrencyCode]Currency)
 	for _, c := range currencies {
+		units := make(map[UnitType]CurrencyUnit)
+
+		units[Micro] = c.MicroUnit
+		units[Minor] = c.MinorUnit
+		units[Major] = c.MajorUnit
+		units[Millions] = c.HighVolumeUnit
+		units[Billions] = c.MegaVolumeUnit
+		units[Trillions] = c.HighestVolumeUnit
+
+		c.UnitMap = units
 		cm[c.Code] = c
 	}
 	b.currencies = currencies
@@ -230,7 +241,7 @@ func (b Bank) GetUserFunds(u types.User) (Account, error) {
 			TotalMajor:     (available + onHold) / c.MajorUnit.MinorRatio,
 			AvailableMajor: (available) / c.MajorUnit.MinorRatio,
 			OnHoldMajor:    (onHold) / c.MajorUnit.MinorRatio,
-			Currency:       c,
+			Currency:       c.Code,
 		}
 	}
 	account := Account{
@@ -238,4 +249,40 @@ func (b Bank) GetUserFunds(u types.User) (Account, error) {
 		Funds:  fundMap,
 	}
 	return account, nil
+}
+
+func (b Bank) ConvertCurrency(code CurrencyCode, from, to UnitType, sum int) (int, error) {
+	currency, ok := b.currencyMap[code]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency: %s", code)
+	}
+	minor, err := currency.ConvertToMinor(from, sum)
+	if err != nil {
+		return 0, err
+	}
+	return currency.ConvertFromMinor(to, minor)
+}
+
+func (c *Currency) ConvertToMinor(from UnitType, sum int) (int, error) {
+	unit, ok := c.UnitMap[from]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency unit: %s", from)
+	}
+	if from == Micro {
+		return sum / unit.MinorRatio, nil
+	}
+
+	return sum * unit.MinorRatio, nil
+}
+
+func (c *Currency) ConvertFromMinor(to UnitType, sum int) (int, error) {
+	unit, ok := c.UnitMap[to]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency unit: %s", to)
+	}
+	if to == Micro {
+		return sum * unit.MinorRatio, nil
+	}
+
+	return sum / unit.MinorRatio, nil
 }
