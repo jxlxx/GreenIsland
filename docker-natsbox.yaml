@@ -1,6 +1,16 @@
+version: '3.8'
+
+networks:
+  greenisland-net:
+    external:
+      name: greenisland-net
+
 services:
   nats-box:
     image: natsio/nats-box:latest
     command: [sleep, 1d]
     environment:
       NATS_URL: nats://nats:4222
+    networks:
+      - greenisland-net
+
