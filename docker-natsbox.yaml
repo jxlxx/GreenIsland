@@ -2,8 +2,8 @@ version: '3.8'
 
 networks:
   greenisland-net:
-    external:
-      name: greenisland-net
+    name: greenisland-net
+    external: true
 
 services:
   nats-box:
