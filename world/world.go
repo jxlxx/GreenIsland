@@ -1,9 +1,12 @@
 package world
 
 import (
+	"log"
+	"os"
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"gopkg.in/yaml.v3"
 
 	"github.com/jxlxx/GreenIsland/config"
 	"github.com/jxlxx/GreenIsland/payloads"
@@ -11,11 +14,12 @@ import (
 )
 
 type World struct {
-	Countries    []Country
 	HourDuration time.Duration
 	nc           *nats.Conn
 	current      payloads.WorldTick
 	totalHours   int
+	countries    []*Country
+	companies    []*Company
 }
 
 func New() *World {
@@ -23,16 +27,14 @@ func New() *World {
 }
 
 func Init() *World {
-
-	// get countries
-
-	// get companies
-
+	countries := createCountries()
+	companies := createCompanies()
 	world := &World{
 		HourDuration: time.Millisecond,
 		nc:           config.Connect(),
+		countries:    countries,
+		companies:    companies,
 	}
-
 	return world
 }
 
@@ -58,11 +60,46 @@ func (w *World) Tick() payloads.WorldTick {
 
 	hour := w.totalHours % 24
 	day := (w.totalHours / 24) % 90
-	quarter := (w.totalHours / 24) / 90
+	quarter := ((w.totalHours/24)/90)%4 + 1
 
 	return payloads.WorldTick{
 		Quarter: quarter,
 		Day:     day,
 		Hour:    hour,
+	}
+}
+
+func createCountries() []*Country {
+	files := []string{
+		"data/countries/canada.yaml",
+		"data/countries/usa.yaml",
+	}
+	return create(files, Country{})
+}
+
+func createCompanies() []*Company {
+	files := []string{
+		"data/company/aerospin.yaml",
+	}
+	return create(files, Company{})
+}
+func create[T any](files []string, t T) []*T {
+	slice := []*T{}
+	for _, f := range files {
+		var cc T
+		config.ReadConfig(f, &cc)
+		slice = append(slice, &cc)
+	}
+	return slice
+}
+
+func CreateTemplate() {
+	country := Country{}
+	data, err := yaml.Marshal(&country)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if err = os.WriteFile("templates/country.yaml", data, 0644); err != nil {
+		log.Fatalln(err)
 	}
 }

@@ -1,8 +1,7 @@
-package company
+package world
 
 import (
 	"github.com/jxlxx/GreenIsland/bank"
-	"github.com/jxlxx/GreenIsland/world"
 )
 
 type Company struct {
@@ -48,8 +47,8 @@ type Employment struct {
 }
 
 type Industries struct {
-	PrimaryIndustries   []world.Industry `yaml:"primary_industries"`
-	SecondaryIndustries []world.Industry `yaml:"secondary_industries"`
+	PrimaryIndustries   []Industry `yaml:"primary_industries"`
+	SecondaryIndustries []Industry `yaml:"secondary_industries"`
 }
 
 type Assets struct {
