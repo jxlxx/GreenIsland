@@ -9,9 +9,6 @@ import (
 )
 
 func (w *World) Run() {
-
-	w.connect()
-
 	for {
 		tick := w.Tick()
 
@@ -37,10 +34,6 @@ func (w *World) Run() {
 		w.current = tick
 		time.Sleep(w.HourDuration)
 	}
-}
-
-func (w *World) connect() {
-
 }
 
 func (w *World) Tick() payloads.WorldTick {
