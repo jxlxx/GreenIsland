@@ -43,7 +43,7 @@ install:
 ###############################################################################
 
 .PHONY: clean-all
-clean-all:
+clean-all: down-natsbox
 	docker compose down --volumes
 
 .PHONY: up
@@ -60,11 +60,15 @@ up-natsbox:
 
 .PHONY: down-natsbox
 down-natsbox:
-	docker compose down
+	docker compose -f docker-natsbox.yaml down 
 
 .PHONY: run-world
 run-world:
 	NATS_URL=$(NATS_URL) NATS_PASSWORD=$(NATS_PASSWORD) NATS_USER=$(NATS_USER) go run cmd/*.go
+
+.PHONY: init
+init:
+	NATS_URL=$(NATS_URL) NATS_PASSWORD=$(NATS_PASSWORD) NATS_USER=$(NATS_USER) go run cmd/init/*.go
 
 .PHONY: natsbox
 natsbox: up-natsbox
