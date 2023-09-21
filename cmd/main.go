@@ -7,11 +7,8 @@ import (
 )
 
 func main() {
-
 	w := world.New()
-
+	w.Connect()
 	go w.Run()
-
 	runtime.Goexit()
-
 }
