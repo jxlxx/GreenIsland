@@ -2,10 +2,14 @@ package world
 
 import (
 	"fmt"
+	"log"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 
 	"github.com/jxlxx/GreenIsland/bank"
+	"github.com/jxlxx/GreenIsland/config"
 	"github.com/jxlxx/GreenIsland/payloads"
 	"github.com/jxlxx/GreenIsland/subjects"
 	"github.com/jxlxx/GreenIsland/types"
@@ -16,6 +20,7 @@ type Company struct {
 	Name            string            `yaml:"name"`
 	HQCountryCode   string            `yaml:"hq_country_code"`
 	Code            string            `yaml:"code"`
+	BankCode        string            `yaml:"bank_code"`
 	DefaultCurrency bank.CurrencyCode `yaml:"currency_code"`
 
 	OutstandingShares int          `yaml:"outstanding_shares"`
@@ -31,7 +36,24 @@ type Company struct {
 	Employment Employment `yaml:"employment"`
 	Industries Industries `yaml:"industries"`
 
-	nc *nats.EncodedConn
+	nc            *nats.EncodedConn
+	bankAccountID uuid.UUID
+}
+
+func (c *Company) InitializeCompany() {
+	c.bankAccountID = uuid.New()
+	r := bank.InitializeCompanyBankAccount{
+		ID:       c.bankAccountID,
+		Currency: c.BalanceSheet.Assets.LiquidAssets.Currency,
+		Unit:     c.BalanceSheet.Assets.LiquidAssets.Unit,
+		Sum:      c.BalanceSheet.Assets.LiquidAssets.Value,
+	}
+	nc := config.Connect()
+	subject := fmt.Sprintf("admin.%s.%s.setFunds", c.HQCountryCode, c.BankCode)
+	fmt.Println(subject)
+	if _, err := nc.Request(subject, payloads.Bytes(r), time.Second); err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func (c *Company) DailySubscriber() func(payloads.WorldTick) {

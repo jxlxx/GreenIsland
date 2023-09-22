@@ -13,6 +13,7 @@ commercial_banks:
     -
         name: "Bank of America"
         id: 247
+        code: "BOA"
         country_code: "USA"
         home_currencies: 
             - "USD"

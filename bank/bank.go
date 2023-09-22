@@ -11,12 +11,14 @@ import (
 	"github.com/nats-io/nats.go/micro"
 
 	"github.com/jxlxx/GreenIsland/config"
-	"github.com/jxlxx/GreenIsland/types"
+	"github.com/jxlxx/GreenIsland/requests"
+	"github.com/jxlxx/GreenIsland/responses"
 )
 
 type Bank struct {
 	ID             int            `yaml:"id"`
 	Name           string         `yaml:"name"`
+	Code           string         `yaml:"code"`
 	CountryCode    string         `yaml:"country_code"`
 	HomeCurrencies []CurrencyCode `yaml:"home_currencies"`
 
@@ -32,7 +34,15 @@ func (b Bank) Bucket() string {
 }
 
 func (b Bank) ServiceName() string {
-	return fmt.Sprintf("service-bank-%s-%d", b.CountryCode, b.ID)
+	return fmt.Sprintf("%sBankingService", b.Code)
+}
+
+func (b Bank) ServiceGroup() string {
+	return fmt.Sprintf("%s.%s", b.CountryCode, b.Code)
+}
+
+func (b Bank) AdminGroup() string {
+	return fmt.Sprintf("admin.%s.%s", b.CountryCode, b.Code)
 }
 
 func (b Bank) Description() string {
@@ -162,15 +172,93 @@ func (b *Bank) AddService(nc *nats.Conn) micro.Service {
 	return srv
 }
 
-func (b *Bank) Handle(req micro.Request) {
-	_ = req.Respond([]byte("swag"))
+func respondParsingError(req micro.Request) {
+	resp := responses.Response{
+		Status: responses.Error,
+	}
+	if err := req.RespondJSON(resp); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (b *Bank) addUserRequest(req micro.Request) {
+	r := requests.NewBankAccount{}
+	if err := json.Unmarshal(req.Data(), &r); err != nil {
+		fmt.Println(1, r)
+		respondParsingError(req)
+		return
+	}
+	id, err := uuid.Parse(r.ID)
+	if id == uuid.Nil || err != nil {
+		fmt.Println(2)
+		respondParsingError(req)
+		return
+	}
+	if err := b.AddUser(id); err != nil {
+		fmt.Println(3)
+		fmt.Println(err)
+		respondParsingError(req)
+		return
+	}
+	response := responses.NewBankAccount{Status: responses.OK}
+	if err := req.RespondJSON(response); err != nil {
+		fmt.Println(err)
+	}
+}
+
+func (b *Bank) getUserFundsRequest(req micro.Request) {
+	_ = req.Respond([]byte("swag 2"))
 }
 
 func (b *Bank) AddEndpoints() {
 	if b.service == nil {
 		log.Fatalln("err: service isn't set")
 	}
-	_ = b.service.AddEndpoint("echo", b)
+	group := b.service.AddGroup(b.ServiceGroup())
+	if err := group.AddEndpoint("addUser", micro.HandlerFunc(b.addUserRequest)); err != nil {
+		log.Fatalln(err)
+	}
+	if err := group.AddEndpoint("getFunds", micro.HandlerFunc(b.getUserFundsRequest)); err != nil {
+		log.Fatalln(err)
+	}
+	admin := b.service.AddGroup(b.AdminGroup())
+	if err := admin.AddEndpoint("setFunds", micro.HandlerFunc(b.adminSetFundsRequest)); err != nil {
+		log.Fatalln()
+	}
+}
+
+type InitializeCompanyBankAccount struct {
+	ID       uuid.UUID
+	Currency CurrencyCode
+	Unit     UnitType
+	Sum      int
+}
+
+func (b Bank) adminSetFundsRequest(req micro.Request) {
+	r := InitializeCompanyBankAccount{}
+	if err := json.Unmarshal(req.Data(), &r); err != nil {
+		log.Println(err)
+	}
+	if err := b.AddUser(r.ID); err != nil {
+		log.Println(err)
+	}
+	minorSum, err := b.ConvertCurrency(r.Currency, r.Unit, Minor, r.Sum)
+	if err != nil {
+		log.Println(err)
+	}
+	if err := b.initialDeposit(r.ID, r.Currency, minorSum); err != nil {
+		log.Println(err)
+	}
+	funds, err := b.GetFunds(r.ID)
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(funds)
+	req.RespondJSON(funds)
+}
+
+func (b Bank) initialDeposit(id uuid.UUID, currency CurrencyCode, sum int) error {
+	return b.Put(id, currency, Available, sum)
 }
 
 func (b Bank) Init() {
@@ -195,6 +283,9 @@ func (b Bank) Put(userID uuid.UUID, currency CurrencyCode, status Availability, 
 	if err != nil {
 		return err
 	}
+	if _, ok := b.currencyMap[currency]; !ok {
+		return fmt.Errorf("err: unknown currency: %s", currency)
+	}
 	key := fmt.Sprintf("%s.%s.%s", userID.String(), string(currency), string(status))
 	_, err = b.accounts.Put(key, v)
 	return err
@@ -211,15 +302,15 @@ func (b Bank) Get(userID uuid.UUID, currency CurrencyCode, status Availability) 
 	return i, err
 }
 
-func (b Bank) AddUser(u types.User) error {
-	if u.ID == uuid.Nil {
+func (b Bank) AddUser(id uuid.UUID) error {
+	if id == uuid.Nil {
 		return fmt.Errorf("error adding user: cannot have nil user id")
 	}
 	for _, c := range b.currencies {
-		if err := b.Put(u.ID, c.Code, Available, 0); err != nil {
+		if err := b.Put(id, c.Code, Available, 0); err != nil {
 			return err
 		}
-		if err := b.Put(u.ID, c.Code, OnHold, 0); err != nil {
+		if err := b.Put(id, c.Code, OnHold, 0); err != nil {
 			return nil
 		}
 	}
@@ -268,14 +359,14 @@ func (b Bank) Hold(user uuid.UUID, code CurrencyCode, sum int) error {
 	return nil
 }
 
-func (b Bank) GetUserFunds(u types.User) (Account, error) {
+func (b Bank) GetFunds(id uuid.UUID) (Account, error) {
 	fundMap := map[CurrencyCode]Funds{}
 	for _, c := range b.currencies {
-		available, err := b.Get(u.ID, c.Code, Available)
+		available, err := b.Get(id, c.Code, Available)
 		if err != nil {
 			return Account{}, err
 		}
-		onHold, err := b.Get(u.ID, c.Code, OnHold)
+		onHold, err := b.Get(id, c.Code, OnHold)
 		if err != nil {
 			return Account{}, err
 		}
@@ -290,7 +381,7 @@ func (b Bank) GetUserFunds(u types.User) (Account, error) {
 		}
 	}
 	account := Account{
-		UserID: u.ID,
+		UserID: id,
 		Funds:  fundMap,
 	}
 	return account, nil

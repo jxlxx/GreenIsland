@@ -12,18 +12,11 @@ central_bank:
 commercial_banks: 
     -
         name: "Bank of Montreal"
-        deposits:
-            currency: "CAD"
-            currency_unit: "millions"
-            value: 3300000
-            jitter: 150
-            average_delta: 150
-        reserve:
-            currency: "CAD"
-            currency_unit: "millions"
-            value: 3300000
-            jitter: 150
-            average_delta: 150
+        code: "BMO"
+        id: 233
+        country_code: "CAN"
+        home_currencies: 
+            - "CAD"
 population:
     total:
         value: 33000000

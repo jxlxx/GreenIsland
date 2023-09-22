@@ -2,6 +2,7 @@ full_name: "AeroSpin Wind Technologies"
 name: "AeroSpin"
 hq_country_code: "USA"
 code: "ASWT"
+bank_code: "BOA"
 currency_code: "USD"
 outstanding_shares: 1090302030
 balance_sheet:

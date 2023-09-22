@@ -23,6 +23,7 @@ type World struct {
 	totalHours       int
 	countries        []*Country
 	companies        []*Company
+	adminService     micro.Service
 }
 
 func New() *World {
@@ -50,6 +51,7 @@ func (w *World) Connect() {
 		}
 		for _, b := range c.CommercialBanks {
 			b.Connect()
+			b.Setup()
 		}
 	}
 
@@ -63,8 +65,36 @@ func (w *World) Connect() {
 	}
 }
 
+func (w *World) SetCompanyBankAccounts() {
+	for _, c := range w.companies {
+		c.InitializeCompany()
+	}
+}
+
+func (w *World) AdminConfig() micro.Config {
+	return micro.Config{
+		Name:    "AdminService",
+		Version: config.GetEnvOrDefault("VERSION", "0.0.1"),
+	}
+}
+
+func (w *World) AdminService(nc *nats.Conn) micro.Service {
+	conf := w.AdminConfig()
+	srv, err := micro.AddService(nc, conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	w.adminService = srv
+	w.AddEndpoints()
+	return w.adminService
+}
+
+func (w *World) AddEndpoints() {
+}
+
 func (w *World) AddServices(nc *nats.Conn) []micro.Service {
-	services := []micro.Service{}
+	w.AdminService(nc)
+	services := []micro.Service{w.adminService}
 	for _, c := range w.countries {
 		for _, b := range c.CommercialBanks {
 			services = append(services, b.AddService(nc))

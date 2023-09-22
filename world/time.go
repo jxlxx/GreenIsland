@@ -8,6 +8,7 @@ import (
 )
 
 func (w *World) Run() error {
+
 	for {
 		tick := w.Tick()
 

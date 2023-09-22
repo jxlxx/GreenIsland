@@ -51,7 +51,7 @@ up:
 	docker compose up -d
 
 .PHONY: down
-down:
+down: down-natsbox 
 	docker compose down
 
 .PHONY: up-natsbox

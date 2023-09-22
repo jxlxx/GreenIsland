@@ -29,6 +29,7 @@ func main() {
 			}
 		}()
 	}
+	w.SetCompanyBankAccounts()
 	if err := w.Run(); err != nil {
 		log.Fatalln(err)
 	}
