@@ -1,5 +1,60 @@
 package bank
 
+import (
+	"fmt"
+	"math/rand"
+)
+
+type CurrencyCode string
+
+type Currency struct {
+	Name              string       `yaml:"name"`
+	Code              CurrencyCode `yaml:"code"`
+	MicroUnit         CurrencyUnit `yaml:"micro_unit"`
+	MinorUnit         CurrencyUnit `yaml:"minor_unit"`
+	MajorUnit         CurrencyUnit `yaml:"major_unit"`
+	HighVolumeUnit    CurrencyUnit `yaml:"high_volume_unit"`
+	MegaVolumeUnit    CurrencyUnit `yaml:"mega_volume_unit"`
+	HighestVolumeUnit CurrencyUnit `yaml:"highest_volume_unit"`
+	UnitMap           map[UnitType]CurrencyUnit
+}
+
+type CurrencyValue struct {
+	Currency CurrencyCode `yaml:"currency"`
+	Unit     UnitType     `yaml:"currency_unit"`
+	Value    int          `yaml:"value"`
+	Jitter   int          `yaml:"jitter"`
+	Average  int          `yaml:"average_delta"`
+}
+
+func (v CurrencyValue) CalcUpdate() int {
+	if v.Jitter == 0 {
+		return 0
+	}
+	delta := rand.Intn(v.Jitter) - v.Jitter/2
+	shift := v.Average
+	return delta + shift
+}
+
+type UnitType string
+
+const (
+	Micro     UnitType = "micro"
+	Minor     UnitType = "minor"
+	Major     UnitType = "major"
+	Millions  UnitType = "millions"
+	Billions  UnitType = "billions"
+	Trillions UnitType = "trillions"
+)
+
+type CurrencyUnit struct {
+	UnitType     UnitType `yaml:"unit_type"`
+	NameSingular string   `yaml:"name_singular"`
+	NamePlural   string   `yaml:"name_plural"`
+	Symbol       string   `yaml:"symbol"`
+	MinorRatio   int      `yaml:"minor_ratio"`
+}
+
 func InitCurrencies() ([]Currency, error) {
 	return []Currency{
 		{
@@ -233,4 +288,40 @@ func InitCurrencies() ([]Currency, error) {
 			},
 		},
 	}, nil
+}
+
+func (b Bank) ConvertCurrency(code CurrencyCode, from, to UnitType, sum int) (int, error) {
+	currency, ok := b.currencyMap[code]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency: %s", code)
+	}
+	minor, err := currency.ConvertToMinor(from, sum)
+	if err != nil {
+		return 0, err
+	}
+	return currency.ConvertFromMinor(to, minor)
+}
+
+func (c Currency) ConvertToMinor(from UnitType, sum int) (int, error) {
+	unit, ok := c.UnitMap[from]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency unit: %s", from)
+	}
+	if from == Micro {
+		return sum / unit.MinorRatio, nil
+	}
+
+	return sum * unit.MinorRatio, nil
+}
+
+func (c Currency) ConvertFromMinor(to UnitType, sum int) (int, error) {
+	unit, ok := c.UnitMap[to]
+	if !ok {
+		return 0, fmt.Errorf("err: unknown currency unit: %s", to)
+	}
+	if to == Micro {
+		return sum * unit.MinorRatio, nil
+	}
+
+	return sum / unit.MinorRatio, nil
 }

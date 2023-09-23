@@ -1,6 +1,7 @@
 package world
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -36,20 +37,36 @@ type Company struct {
 	Employment Employment `yaml:"employment"`
 	Industries Industries `yaml:"industries"`
 
-	nc            *nats.EncodedConn
-	bankAccountID uuid.UUID
+	nc *nats.EncodedConn
+	id uuid.UUID
 }
 
 func (c *Company) InitializeCompany() {
-	c.bankAccountID = uuid.New()
-	r := bank.InitializeCompanyBankAccount{
-		ID:       c.bankAccountID,
-		Currency: c.BalanceSheet.Assets.LiquidAssets.Currency,
-		Unit:     c.BalanceSheet.Assets.LiquidAssets.Unit,
-		Sum:      c.BalanceSheet.Assets.LiquidAssets.Value,
-	}
 	nc := config.Connect()
-	subject := fmt.Sprintf("admin.%s.%s.setFunds", c.HQCountryCode, c.BankCode)
+	defer func() {
+		if err := nc.Drain(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	c.id = uuid.New()
+	req := bank.NewAccountRequest{
+		UserID: c.id,
+	}
+	resp, err := nc.Request("%s.%s.create", payloads.Bytes(req), time.Second)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	account := bank.Account{}
+	if err := json.Unmarshal(resp.Data, &account); err != nil {
+		log.Fatalln(err)
+	}
+	r := bank.Deposit{
+		AccountID: account.AccountID,
+		Currency:  c.BalanceSheet.Assets.LiquidAssets.Currency,
+		Unit:      c.BalanceSheet.Assets.LiquidAssets.Unit,
+		Sum:       c.BalanceSheet.Assets.LiquidAssets.Value,
+	}
+	subject := fmt.Sprintf("admin.%s.%s.deposit", c.HQCountryCode, c.BankCode)
 	fmt.Println(subject)
 	if _, err := nc.Request(subject, payloads.Bytes(r), time.Second); err != nil {
 		log.Fatalln(err)
@@ -64,7 +81,6 @@ func (c *Company) DailySubscriber() func(payloads.WorldTick) {
 
 func (c *Company) QuarterlySubscriber() func(payloads.WorldTick) {
 	return func(p payloads.WorldTick) {
-
 		update := payloads.QuarterlyCompanyUpdate{
 			Name:         c.Name,
 			Quarter:      p.Quarter,
