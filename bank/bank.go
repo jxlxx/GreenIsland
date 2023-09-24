@@ -60,7 +60,7 @@ const (
 )
 
 func (b *Bank) Setup() {
-	currencies, _ := InitCurrencies()
+	currencies, _ := initCurrencies()
 	cm := make(map[CurrencyCode]Currency)
 	for _, c := range currencies {
 		units := make(map[UnitType]CurrencyUnit)
@@ -116,10 +116,10 @@ func (b Bank) newAccount(id uuid.UUID) (Account, error) {
 	}
 	account := Account{}
 	for _, c := range b.currencies {
-		if err := b.Put(id, c.Code, Available, 0); err != nil {
+		if err := b.put(id, c.Code, Available, 0); err != nil {
 			return Account{}, err
 		}
-		if err := b.Put(id, c.Code, OnHold, 0); err != nil {
+		if err := b.put(id, c.Code, OnHold, 0); err != nil {
 			return Account{}, nil
 		}
 	}
@@ -129,11 +129,11 @@ func (b Bank) newAccount(id uuid.UUID) (Account, error) {
 func (b Bank) getAccount(id uuid.UUID) (Account, error) {
 	fundMap := map[CurrencyCode]Funds{}
 	for _, c := range b.currencies {
-		available, err := b.Get(id, c.Code, Available)
+		available, err := b.get(id, c.Code, Available)
 		if err != nil {
 			return Account{}, err
 		}
-		onHold, err := b.Get(id, c.Code, OnHold)
+		onHold, err := b.get(id, c.Code, OnHold)
 		if err != nil {
 			return Account{}, err
 		}
@@ -159,7 +159,7 @@ func (b Bank) transfer(give, recv uuid.UUID, code CurrencyCode, sum int, fromOnH
 	if fromOnHold {
 		status = OnHold
 	}
-	current, err := b.Get(give, code, status)
+	current, err := b.get(give, code, status)
 	remainder := current - sum
 	if err != nil {
 		return err
@@ -168,17 +168,17 @@ func (b Bank) transfer(give, recv uuid.UUID, code CurrencyCode, sum int, fromOnH
 		return fmt.Errorf("transfer failed: insufficient funds")
 	}
 
-	if err := b.Put(give, code, status, remainder); err != nil {
+	if err := b.put(give, code, status, remainder); err != nil {
 		return err
 	}
-	if err := b.Put(recv, code, Available, sum); err != nil {
+	if err := b.put(recv, code, Available, sum); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (b Bank) hold(user uuid.UUID, code CurrencyCode, sum int) error {
-	current, err := b.Get(user, code, Available)
+	current, err := b.get(user, code, Available)
 	remainder := current - sum
 	if err != nil {
 		return err
@@ -187,10 +187,10 @@ func (b Bank) hold(user uuid.UUID, code CurrencyCode, sum int) error {
 		return fmt.Errorf("hold failed: insufficient available securities to put on hold")
 	}
 
-	if err := b.Put(user, code, Available, remainder); err != nil {
+	if err := b.put(user, code, Available, remainder); err != nil {
 		return err
 	}
-	if err := b.Put(user, code, OnHold, sum); err != nil {
+	if err := b.put(user, code, OnHold, sum); err != nil {
 		return err
 	}
 	return nil
