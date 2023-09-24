@@ -24,7 +24,7 @@ func (b Bank) adminDepositRequest(req micro.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	if err := b.Put(r.AccountID, r.Currency, Available, minorSum); err != nil {
+	if err := b.put(r.AccountID, r.Currency, Available, minorSum); err != nil {
 		log.Println(err)
 	}
 	account, err := b.getAccount(r.AccountID)

@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (b Bank) Put(id uuid.UUID, currency CurrencyCode, status Availability, value int) error {
+func (b Bank) put(id uuid.UUID, currency CurrencyCode, status Availability, value int) error {
 	v, err := json.Marshal(value)
 	if err != nil {
 		return err
@@ -20,7 +20,7 @@ func (b Bank) Put(id uuid.UUID, currency CurrencyCode, status Availability, valu
 	return err
 }
 
-func (b Bank) Get(id uuid.UUID, currency CurrencyCode, status Availability) (int, error) {
+func (b Bank) get(id uuid.UUID, currency CurrencyCode, status Availability) (int, error) {
 	key := fmt.Sprintf("%s.%s.%s", id.String(), string(currency), string(status))
 	v, err := b.accounts.Get(key)
 	if err != nil {
@@ -31,7 +31,7 @@ func (b Bank) Get(id uuid.UUID, currency CurrencyCode, status Availability) (int
 	return i, err
 }
 
-func (b Bank) AddCustomerAccount(id uuid.UUID, accountID uuid.UUID) error {
+func (b Bank) addCustomerAccount(id uuid.UUID, accountID uuid.UUID) error {
 	key := fmt.Sprintf("%s.%s", id.String(), accountID.String())
 	v, err := json.Marshal(Active)
 	if err != nil {
@@ -41,7 +41,7 @@ func (b Bank) AddCustomerAccount(id uuid.UUID, accountID uuid.UUID) error {
 	return err
 }
 
-func (b Bank) CancelCustomerAccount(id uuid.UUID, accountID uuid.UUID) error {
+func (b Bank) cancelCustomerAccount(id uuid.UUID, accountID uuid.UUID) error {
 	key := fmt.Sprintf("%s.%s", id.String(), accountID.String())
 	v, err := json.Marshal(Cancelled)
 	if err != nil {

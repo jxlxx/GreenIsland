@@ -55,7 +55,7 @@ type CurrencyUnit struct {
 	MinorRatio   int      `yaml:"minor_ratio"`
 }
 
-func InitCurrencies() ([]Currency, error) {
+func initCurrencies() ([]Currency, error) {
 	return []Currency{
 		{
 			Name: "canadian dollars",
