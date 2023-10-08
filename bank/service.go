@@ -4,12 +4,103 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/micro"
 
 	"github.com/jxlxx/GreenIsland/config"
 )
+
+///////////////////////////////////////////////////////////////////////////////
+
+type Handler interface {
+	CreateAccount(micro.Request, uuid.UUID)
+	GetAccountByID(micro.Request, uuid.UUID)
+	GetAccountsByOwnerID(micro.Request, uuid.UUID)
+	AdminDeposit(micro.Request, Deposit)
+	AdminTransfer(micro.Request, Transfer)
+	AdminHold(micro.Request, Hold)
+}
+
+type ServiceWrapper struct {
+	Handler Handler
+}
+
+type Options struct {
+	Name        string
+	Version     string
+	Description string
+	CountryCode string
+	BankCode    string
+}
+
+func CreateService(nc *nats.Conn, h Handler, opts Options) (micro.Service, error) {
+	conf := micro.Config{
+		Name:        opts.Name,
+		Version:     opts.Version,
+		Description: opts.Description,
+	}
+	service, err := micro.AddService(nc, conf)
+	if err != nil {
+		return nil, err
+	}
+	s := ServiceWrapper{
+		Handler: h,
+	}
+
+	base := service.AddGroup(fmt.Sprintf("bank.%s.%s", opts.CountryCode, opts.BankCode))
+	admin := service.AddGroup(fmt.Sprintf("admin.bank.%s.%s", opts.CountryCode, opts.BankCode))
+
+	if err := base.AddEndpoint("create", micro.HandlerFunc(s.CreateAccount)); err != nil {
+		return nil, err
+	}
+	if err := base.AddEndpoint("account", micro.HandlerFunc(s.GetAccountByID)); err != nil {
+		return nil, err
+	}
+	if err := base.AddEndpoint("accounts", micro.HandlerFunc(s.GetAccountsByOwnerID)); err != nil {
+		return nil, err
+	}
+
+	if err := admin.AddEndpoint("deposit", micro.HandlerFunc(s.AdminDeposit)); err != nil {
+		return nil, err
+	}
+	if err := admin.AddEndpoint("transfer", micro.HandlerFunc(s.AdminTransfer)); err != nil {
+		return nil, err
+	}
+	if err := admin.AddEndpoint("hold", micro.HandlerFunc(s.AdminHold)); err != nil {
+		return nil, err
+	}
+	return service, nil
+}
+
+func (s *ServiceWrapper) CreateAccount(r micro.Request) {
+}
+
+func (s *ServiceWrapper) GetAccountByID(r micro.Request) {
+}
+
+func (s *ServiceWrapper) GetAccountsByOwnerID(r micro.Request) {
+}
+
+func (s ServiceWrapper) AdminDeposit(req micro.Request) {
+	subj := strings.Split(req.Subject(), ".")
+	if len(subj) != 2 {
+		respondError(req, "wrong number of tokens in subject")
+	}
+	deposit := Deposit{}
+	if err := json.Unmarshal(req.Data(), &deposit); err != nil {
+		log.Println(err)
+	}
+	s.Handler.AdminDeposit(req, deposit)
+}
+
+func (s *ServiceWrapper) AdminTransfer(r micro.Request) {
+}
+
+func (s *ServiceWrapper) AdminHold(r micro.Request) {
+}
 
 func (b *Bank) serviceConfig() micro.Config {
 	conf := micro.Config{
@@ -20,14 +111,13 @@ func (b *Bank) serviceConfig() micro.Config {
 	return conf
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 func (b *Bank) AddService(nc *nats.Conn) micro.Service {
-	conf := b.serviceConfig()
-	srv, err := micro.AddService(nc, conf)
+	srv, err := CreateService(nc, b, Options{})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	b.service = srv
-	b.addEndpoints()
 	return srv
 }
 
@@ -41,8 +131,8 @@ func respondError(req micro.Request, errorMessage string) {
 	}
 }
 
-func (b *Bank) createAccountRequest(req micro.Request) {
-	r := NewAccountRequest{}
+func (b *Bank) CreateAccount(req micro.Request, id uuid.UUID) {
+	r := NewAccountPayload{}
 	if err := json.Unmarshal(req.Data(), &r); err != nil {
 		respondError(req, "cannot parse request")
 		return
@@ -59,39 +149,50 @@ func (b *Bank) createAccountRequest(req micro.Request) {
 	}
 }
 
-func (b Bank) getAccountRequest(req micro.Request) {
+func (b Bank) GetAccountByID(req micro.Request, id uuid.UUID) {
 	_ = req.Respond([]byte("unimplemented"))
 }
 
-func (b *Bank) getCustomerAccountsRequest(req micro.Request) {
+func (b *Bank) GetAccountsByOwnerID(req micro.Request, id uuid.UUID) {
 	_ = req.Respond([]byte("unimplemented"))
 }
 
-func (b *Bank) addEndpoints() {
-	if b.service == nil {
-		log.Fatalln("err: service isn't set")
-	}
-	g := b.service.AddGroup(b.serviceGroup())
-	if err := g.AddEndpoint("create", micro.HandlerFunc(b.createAccountRequest)); err != nil {
-		log.Fatalln(err)
-	}
-	if err := g.AddEndpoint("account", micro.HandlerFunc(b.getAccountRequest)); err != nil {
-		log.Fatalln(err)
-	}
-	if err := g.AddEndpoint("accounts", micro.HandlerFunc(b.getCustomerAccountsRequest)); err != nil {
-		log.Fatalln(err)
-	}
+type Deposit struct {
+	AccountID uuid.UUID
+	Currency  CurrencyCode
+	Unit      UnitType
+	Sum       int
+}
 
-	admin := b.service.AddGroup(b.adminGroup())
-	if err := admin.AddEndpoint("deposit", micro.HandlerFunc(b.adminDepositRequest)); err != nil {
-		log.Fatalln()
+func (b Bank) AdminDeposit(req micro.Request, deposit Deposit) {
+	minorSum, err := b.ConvertCurrency(deposit.Currency, deposit.Unit, Minor, deposit.Sum)
+	if err != nil {
+		log.Println(err)
 	}
-	if err := admin.AddEndpoint("transfer", micro.HandlerFunc(b.adminTransferRequest)); err != nil {
-		log.Fatalln()
+	if err := b.put(deposit.AccountID, deposit.Currency, Available, minorSum); err != nil {
+		log.Println(err)
 	}
-	if err := admin.AddEndpoint("hold", micro.HandlerFunc(b.adminHoldRequest)); err != nil {
-		log.Fatalln()
+	account, err := b.getAccount(deposit.AccountID)
+	if err != nil {
+		log.Println(err)
 	}
+	if err := req.RespondJSON(account); err != nil {
+		log.Println(err)
+	}
+}
+
+type Transfer struct {
+}
+
+func (b Bank) AdminTransfer(req micro.Request, t Transfer) {
+	_ = req.Respond([]byte("unimplemented"))
+}
+
+type Hold struct {
+}
+
+func (b Bank) AdminHold(req micro.Request, h Hold) {
+	_ = req.Respond([]byte("unimplemented"))
 }
 
 func (b Bank) accountBucket() string {
