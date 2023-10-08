@@ -1,21 +1,24 @@
 {
   description = "A nix flake with a go dev environment";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = {
+    unstable.url = "nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self,  unstable, flake-utils }:
     flake-utils.lib.eachDefaultSystem
       (system:
-        let pkgs = nixpkgs.legacyPackages.${system}; in
+        let pkgs = unstable.legacyPackages.${system}; in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pkgs.go
             pkgs.gotools
             pkgs.golangci-lint
             pkgs.gopls
             pkgs.go-outline
             pkgs.gopkgs
+            pkgs.go_1_21
           ];
         };
       }
