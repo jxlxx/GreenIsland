@@ -16,12 +16,6 @@
             pkgs.gopls
             pkgs.go-outline
             pkgs.gopkgs
-            pkgs.docker-compose
-            pkgs.sqlc
-            pkgs.postgresql
-            pkgs.cue
-            pkgs.terraform
-            pkgs.tfswitch
           ];
         };
       }
